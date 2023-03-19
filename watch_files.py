@@ -32,6 +32,7 @@ from watchdog.events import PatternMatchingEventHandler
 
 class CodeFileHandler(PatternMatchingEventHandler):
     patterns = ["*.py"]
+    ignore_patterns = ["*/.git/*"]
     def on_modified(self, event):
         print(f"Handling on_modified event for {event.src_path}")
         print(f"File modified: {event.src_path}")
@@ -137,7 +138,7 @@ class CodeFileHandler(PatternMatchingEventHandler):
             print("File not found in the database")
 
 
-observer = PollingObserver()
+observer = Observer()
 event_handler = CodeFileHandler()
 observer.schedule(event_handler, path='C:\\Users\\oropesa\\Documents\\Magicus', recursive=True)
 print(f"Watching path: C:\\Users\\oropesa\\Documents\\Magicus")
