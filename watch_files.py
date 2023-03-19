@@ -18,14 +18,20 @@ DB_PORT = "5432"
 engine = create_engine(f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}")
 Session = sessionmaker(bind=engine)
 
-def git_commit(file_path, message):
+def git_commit(file_path, message, git_add_all=False):
     try:
-        print(f"Running git add {file_path}")
-        subprocess.run(["git", "add", file_path], check=True)
+        if git_add_all:
+            print("Running git add --all")
+            subprocess.run(["git", "add", "--all"], check=True)
+        else:
+            print(f"Running git add {file_path}")
+            subprocess.run(["git", "add", file_path], check=True)
+        
         print(f"Running git commit -m '{message}'")
         subprocess.run(["git", "commit", "-m", message], check=True)
     except subprocess.CalledProcessError as e:
         print(f"Error while committing {file_path}: {e}")
+
 
 from watchdog.observers.polling import PollingObserver
 from watchdog.events import PatternMatchingEventHandler
@@ -64,7 +70,7 @@ class CodeFileHandler(PatternMatchingEventHandler):
 
             print(f"After updating code snippet: {code_snippet.__dict__}")
             print(f"Updated code snippet: {file_path}")
-            git_commit(file_path, f"Update {file_path}")
+            git_commit(file_path, f"Update {file_path}", git_add_all=True)
         else:
             print("File not found in the database")
 
@@ -109,7 +115,7 @@ class CodeFileHandler(PatternMatchingEventHandler):
 
                 # Commit the new file
                 commit_message = f"Add new Python file: {file_path}"
-                repo.git.commit('-m', commit_message)
+                git_commit(file_path, commit_message, git_add_all=True)
 
                 # Push the changes to the remote repository
                 repo.git.push()
@@ -133,7 +139,7 @@ class CodeFileHandler(PatternMatchingEventHandler):
             session.delete(code_snippet)
             session.commit()
             print(f"Deleted code snippet: {file_path}")
-            git_commit(file_path, f"Delete {file_path}")
+            git_commit(file_path, f"Delete {file_path}", git_add_all=True)
         else:
             print("File not found in the database")
 
