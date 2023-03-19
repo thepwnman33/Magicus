@@ -53,7 +53,7 @@ class CodeFileHandler(FileSystemEventHandler):
                 code = f.read()
 
             name = os.path.basename(file_path)
-            description = "A brief description of the code snippet"
+            description = name
 
             code_snippet = CodeSnippet(name=name, description=description, file_path=file_path, code=code, latest_commit=latest_commit)
             session.add(code_snippet)
@@ -62,7 +62,7 @@ class CodeFileHandler(FileSystemEventHandler):
 
 observer = Observer()
 event_handler = CodeFileHandler()
-observer.schedule(event_handler, path='.', recursive=True)
+observer.schedule(event_handler, path='C:/Users/oropesa/Documents/Magicus', recursive=True)
 observer.start()
 
 try:
