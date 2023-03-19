@@ -27,7 +27,11 @@ def git_commit(file_path, message):
     except subprocess.CalledProcessError as e:
         print(f"Error while committing {file_path}: {e}")
 
-class CodeFileHandler(FileSystemEventHandler):
+from watchdog.observers.polling import PollingObserver
+from watchdog.events import PatternMatchingEventHandler
+
+class CodeFileHandler(PatternMatchingEventHandler):
+    patterns = ["*.py"]
     def on_modified(self, event):
         print(f"Handling on_modified event for {event.src_path}")
         print(f"File modified: {event.src_path}")
@@ -65,48 +69,52 @@ class CodeFileHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         print(f"Handling on_created event for {event.src_path}")
-        print(f"File created: {event.src_path}")
-        if event.is_directory or not event.src_path.endswith('.py'):
-            return
+        file_path = None
+        if not event.is_directory and event.src_path.endswith(".py"):
+            file_path = event.src_path
+            print(f"File created: {file_path}")
+            print("Processing created Python file")
 
-        print("Processing created Python file")
+            if not os.path.exists(file_path):
+                print(f"File not found: {file_path}")
+                return
 
-        file_path = event.src_path
-        repo = git.Repo(search_parent_directories=True)
-        relative_file_path = os.path.relpath(file_path, repo.working_tree_dir)
-        try:
-            latest_commit = repo.git.log('-1', relative_file_path)
-        except git.exc.GitCommandError:
-            latest_commit = repo.head.commit.hexsha
+            # The rest of the on_created function code...
+            repo = git.Repo(search_parent_directories=True)
+            relative_file_path = os.path.relpath(file_path, repo.working_tree_dir)
+            try:
+                latest_commit = repo.git.log('-1', relative_file_path)
+            except git.exc.GitCommandError:
+                latest_commit = repo.head.commit.hexsha
 
-        session = Session()
-        code_snippet = session.query(CodeSnippet).filter_by(file_path=file_path).first()
+            session = Session()
+            code_snippet = session.query(CodeSnippet).filter_by(file_path=file_path).first()
 
-        if code_snippet is None:
-            with open(file_path, 'r') as f:
-                code = f.read()
+            if code_snippet is None:
+                with open(file_path, 'r') as f:
+                    code = f.read()
 
-            name = os.path.basename(file_path)
-            description = name
+                name = os.path.basename(file_path)
+                description = name
 
-            code_snippet = CodeSnippet(name=name, description=description, file_path=file_path, code=code, latest_commit=latest_commit)
-            session.add(code_snippet)
-            session.commit()
+                code_snippet = CodeSnippet(name=name, description=description, file_path=file_path, code=code, latest_commit=latest_commit)
+                session.add(code_snippet)
+                session.commit()
 
-            print(f"Added code snippet: {code_snippet.__dict__}")
+                print(f"Added code snippet: {code_snippet.__dict__}")
 
-            # Stage the new file
-            repo.git.add(file_path)
+                # Stage the new file
+                repo.git.add(file_path)
 
-            # Commit the new file
-            commit_message = f"Add new Python file: {file_path}"
-            repo.git.commit('-m', commit_message)
+                # Commit the new file
+                commit_message = f"Add new Python file: {file_path}"
+                repo.git.commit('-m', commit_message)
 
-            # Push the changes to the remote repository
-            repo.git.push()
+                # Push the changes to the remote repository
+                repo.git.push()
 
-        else:
-            print("File already exists in the database")
+            else:
+                print("File already exists in the database")
 
     def on_deleted(self, event):
         print(f"Handling on_deleted event for {event.src_path}")
@@ -129,7 +137,7 @@ class CodeFileHandler(FileSystemEventHandler):
             print("File not found in the database")
 
 
-observer = Observer()
+observer = PollingObserver()
 event_handler = CodeFileHandler()
 observer.schedule(event_handler, path='C:\\Users\\oropesa\\Documents\\Magicus', recursive=True)
 print(f"Watching path: C:\\Users\\oropesa\\Documents\\Magicus")
