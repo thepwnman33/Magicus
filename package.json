@@ -1,0 +1,56 @@
+{
+    "name": "magicus",
+    "displayName": "Magicus",
+    "description": "A Visual Studio Code extension for semi-automated coding using GPT",
+    "version": "0.0.1",
+    "engines": {
+      "vscode": "^1.62.0"
+    },
+    "categories": [
+      "Other"
+    ],
+    "main": "./out/extension.js",
+    "activationEvents": [
+      "onCommand:extension.sendCode",
+      "onCommand:extension.requestModification",
+      "onCommand:extension.reportError",
+      "onCommand:extension.runCode"
+    ],
+    "contributes": {
+      "commands": [
+        {
+          "command": "extension.sendCode",
+          "title": "Send Code to Magicus Server"
+        },
+        {
+          "command": "extension.requestModification",
+          "title": "Request Code Modification from GPT"
+        },
+        {
+          "command": "extension.reportError",
+          "title": "Report Error to GPT"
+        },
+        {
+          "command": "extension.runCode",
+          "title": "Run Code"
+        }
+      ]
+    },
+    "scripts": {
+      "vscode:prepublish": "npm run compile",
+      "compile": "tsc -p ./",
+      "watch": "tsc -watch -p ./",
+      "pretest": "npm run compile && npm run lint",
+      "lint": "tslint -p ./",
+      "test": "node ./node_modules/vscode/bin/test"
+    },
+    "devDependencies": {
+      "@types/node": "^16.11.10",
+      "@types/ws": "^8.5.4",
+      "tslint": "^6.1.3",
+      "typescript": "^4.4.4",
+      "vscode": "^1.1.37",
+      "ws": "^8.13.0"
+    }
+  }
+  

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magicus Web App</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <button id="sendCodeBtn">Send Code</button>
+            <button id="requestModificationBtn">Request Modification</button>
+            <button id="reportErrorBtn">Report Error</button>
+            <button id="runCodeBtn">Run Code</button>
+
+            <div class="api-settings">
+                <label for="engine">Engine:</label>
+                <select id="engine">
+                    <option value="davinci-codex">davinci-codex</option>
+                    <option value="davinci-002">davinci-002</option>
+                    <option value="curie-002">curie-002</option>
+                    <option value="babbage-002">babbage-002</option>
+                    <option value="ada-002">ada-002</option>
+                    <option value="text-davinci-003">text-davinci-003</option>
+                    <option value="text-curie-003">text-curie-003</option>
+                    <option value="text-babbage-003">text-babbage-003</option>
+                    <option value="text-ada-003">text-ada-003</option>
+                    <option value="text-chatgpt-turbo">text-chatgpt-turbo</option>
+                </select>
+                <label for="maxTokens">Max tokens:</label>
+                <input type="number" id="maxTokens" value="100">
+                <label for="temperature">Temperature:</label>
+                <input type="number" id="temperature" step="0.1" value="0.7">
+                <label for="n">N:</label>
+                <input type="number" id="n" value="1">
+                <label for="stop">Stop:</label>
+                <input type="text" id="stop" placeholder="Enter stop sequence">
+                <label for="topP">Top P:</label>
+                <input type="number" id="topP" step="0.1" value="1">
+                <label for="prefix">Pre-fix:</label>
+                <input type="text" id="prefix" placeholder="Enter pre-fix">
+            </div>
+        </div>
+        <div class="chat">
+            <div class="chat-window" id="chatWindow"></div>
+            <div class="input-area">
+                <textarea id="userInput" placeholder="Type your message..."></textarea>
+                <button id="sendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        const SERVER_URL = 'ws://localhost:8765';
+    
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatWindow = document.getElementById('chatWindow');
+        const sendCodeBtn = document.getElementById('sendCodeBtn');
+        const requestModificationBtn = document.getElementById('requestModificationBtn');
+        const reportErrorBtn = document.getElementById('reportErrorBtn');
+        const runCodeBtn = document.getElementById('runCodeBtn');
+        const engineSelect = document.getElementById('engine');
+        const maxTokensInput = document.getElementById('maxTokens');
+        const temperatureInput = document.getElementById('temperature');
+        const nInput = document.getElementById('n');
+        const stopInput = document.getElementById('stop');
+        const topPInput = document.getElementById('topP');
+        const prefixInput = document.getElementById('prefix');
+    
+        const ws = new WebSocket(SERVER_URL);
+    
+        function addMessageToChatWindow(message, sender) {
+            const messageElem = document.createElement('div');
+            messageElem.classList.add(sender);
+            messageElem.textContent = (sender === 'user' ? 'User: ' : 'ChatGPT: ') + message; // Prepend the sender label
+            chatWindow.appendChild(messageElem);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+    
+        // Add this event listener for the userInput element
+        userInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendBtn.click();
+            }
+        });
+    
+        sendBtn.addEventListener('click', () => {
+            const message = userInput.value;
+            const prefix = prefixInput.value;
+            const prompt = prefix ? `${prefix} ${message}` : message;
+    
+            const apiSettings = {
+                engine: engineSelect.value,
+                maxTokens: parseInt(maxTokensInput.value),
+                temperature: parseFloat(temperatureInput.value),
+                n: parseInt(nInput.value),
+                stop: stopInput.value || null,
+                topP: parseFloat(topPInput.value),
+            };
+    
+            ws.send(JSON.stringify({
+                action: 'send_message',
+                prompt: prompt,
+                apiSettings: apiSettings
+            }));
+    
+            console.log("WebSocket message sent:", {action: 'send_message', prompt: prompt, apiSettings: apiSettings});  // Added console log
+    
+            userInput.value = '';
+            addMessageToChatWindow(prompt, 'user');
+        });
+    
+        ws.addEventListener('message', (event) => {
+            const data = JSON.parse(event.data);
+            console.log("WebSocket message received:", data);  // Added console log
+    
+            const action = data.action;
+    
+            if (action === 'chat_response') {
+                const message = data.message;
+                addMessageToChatWindow(message, 'bot');
+            }
+        });
+    </script>
+    
+</body>
+</html>
