@@ -1,3 +1,4 @@
+print("Starting the file watcher...")
 import os
 import time
 import git
@@ -18,6 +19,7 @@ Session = sessionmaker(bind=engine)
 
 class CodeFileHandler(FileSystemEventHandler):
     def on_modified(self, event):
+        print(f"File modified: {event.src_path}")
         if event.is_directory or not event.src_path.endswith('.py'):
             return
 
@@ -39,6 +41,7 @@ class CodeFileHandler(FileSystemEventHandler):
             print(f"Updated code snippet: {file_path}")
 
     def on_created(self, event):
+        print(f"File created: {event.src_path}")
         if event.is_directory or not event.src_path.endswith('.py'):
             return
 
@@ -60,9 +63,25 @@ class CodeFileHandler(FileSystemEventHandler):
             session.commit()
             print(f"Added new code snippet: {file_path}")
 
+    def on_deleted(self, event):
+        print(f"File deleted: {event.src_path}")
+        if event.is_directory or not event.src_path.endswith('.py'):
+            return
+
+        file_path = event.src_path
+        session = Session()
+        code_snippet = session.query(CodeSnippet).filter_by(file_path=file_path).first()
+
+        if code_snippet is not None:
+            session.delete(code_snippet)
+            session.commit()
+            print(f"Deleted code snippet: {file_path}")
+
 observer = Observer()
 event_handler = CodeFileHandler()
-observer.schedule(event_handler, path='C:/Users/oropesa/Documents/Magicus', recursive=True)
+observer.schedule(event_handler, path='C:\\Users\\oropesa\\Documents\\Magicus', recursive=True)
+print(f"Watching path: C:\\Users\\oropesa\\Documents\\Magicus")  # Add this line
+print("Starting the observer...")
 observer.start()
 
 try:

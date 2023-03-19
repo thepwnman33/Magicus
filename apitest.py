@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 import sys
 from flask_cors import CORS
+from sqlalchemy import or_
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -54,16 +55,26 @@ def search_code_snippets():
     query = session.query(CodeSnippet)
 
     # Apply search filters
-    if 'name' in search_data:
-        query = query.filter(CodeSnippet.name.contains(search_data['name']))
-    if 'description' in search_data:
-        query = query.filter(CodeSnippet.description.contains(search_data['description']))
-    if 'code' in search_data:
-        query = query.filter(CodeSnippet.code.contains(search_data['code']))
+    query = query.filter(
+        or_(
+            CodeSnippet.name.contains(search_data['name']),
+            CodeSnippet.description.contains(search_data['description']),
+            CodeSnippet.code.contains(search_data['code'])
+        )
+    )
 
     # Fetch results and convert them to a list of dictionaries
     results = query.all()
     response_data = [{'id': result.id, 'name': result.name, 'description': result.description, 'file_path': result.file_path, 'code': result.code, 'latest_commit': result.latest_commit} for result in results]
+
+    # Debugging
+    print('Search data:', search_data)
+    print('Query:', query)
+    print('Results:', results)
+    print('Response data:', response_data)
+
+    # Print executed SQL
+    print("Executed SQL:", query.statement.compile(compile_kwargs={"literal_binds": True}))
 
     # Return JSON response
     return jsonify(response_data)
@@ -79,6 +90,39 @@ def generate():
 @app.route('/index1.html')
 def index1():
     return send_from_directory(os.path.join(os.path.dirname(__file__), 'templates'), 'index1.html')
+
+@app.route('/get_all_files', methods=['GET'])
+def get_all_files():
+    # Create a session and query the database
+    session = Session()
+    query = session.query(CodeSnippet)
+
+    # Fetch all code snippets
+    results = query.all()
+
+    # Organize the results in a list of dictionaries
+    organized_data = []
+    for result in results:
+        organized_data.append({
+            'script_name': result.name,
+            'description': result.description,
+            'id': result.id,
+            'file_path': result.file_path,
+            'code': result.code,
+            'latest_commit': result.latest_commit
+        })
+
+    # Return JSON response
+    return jsonify(organized_data)
+
+@app.route('/view_json')
+def view_json():
+    # Get the code snippets as a JSON string
+    json_data = get_all_files().get_data(as_text=True)
+
+    return render_template('view_json.html', json_data=json_data)
+
+
 
 
 def run():

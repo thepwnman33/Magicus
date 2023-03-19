@@ -17,8 +17,9 @@ try:
     )
     print("Connected successfully!")
 
-    # Close the connection
+    # Close the connection60
     conn.close()
 
 except psycopg2.Error as e:
     print("Error connecting to database:", e)
+    
