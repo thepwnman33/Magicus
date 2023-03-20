@@ -1,1 +1,0 @@
-dont fi ght in front of white people

@@ -8,6 +8,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import CodeSnippet
 import subprocess
+import threading
+from watchdog.observers.polling import PollingObserver
 
 DB_NAME = "mydatabase"
 DB_USER = "your_new_user"
@@ -126,27 +128,28 @@ class CodeFileHandler(PatternMatchingEventHandler):
             print("File already exists in the database")
 
 def on_deleted(self, event):
-    print(f"Handling on_deleted event for {event.src_path}")
-    print(f"File deleted: {event.src_path}")
-    if event.is_directory or not event.src_path.endswith('.py'):
-        return
+        print(f"Handling on_deleted event for {event.src_path}")
+        print(f"File deleted: {event.src_path}")
+        if event.is_directory or not event.src_path.endswith('.py'):
+            return
 
-    print("Processing deleted Python file")
+        print("Processing deleted Python file")
 
-    file_path = event.src_path
-    session = Session()
-    code_snippet = session.query(CodeSnippet).filter_by(file_path=file_path).first()
+        file_path = event.src_path
+        session = Session()
+        code_snippet = session.query(CodeSnippet).filter_by(file_path=file_path).first()
 
-    if code_snippet is not None:
-        session.delete(code_snippet)
-        session.commit()
-        print(f"Deleted code snippet: {file_path}")
-        git_commit(file_path, f"Delete {file_path}", git_add_all=True)
-    else:
-        print("File not found in the database")
+        if code_snippet is not None:
+            session.delete(code_snippet)
+            session.commit()
+            print(f"Deleted code snippet: {file_path}")
+            git_commit(file_path, f"Delete {file_path}", git_add_all=True)
+        else:
+            print("File not found in the database")
 
+# Replace the Observer instance creation with the following:
 
-observer = Observer()
+observer = PollingObserver()
 event_handler = CodeFileHandler()
 observer.schedule(event_handler, path='C:\\Users\\oropesa\\Documents\\Magicus', recursive=True)
 print(f"Watching path: C:\\Users\\oropesa\\Documents\\Magicus")
