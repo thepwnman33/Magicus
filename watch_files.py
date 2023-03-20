@@ -10,6 +10,8 @@ from models import CodeSnippet
 import subprocess
 import threading
 from watchdog.observers.polling import PollingObserver
+from watchdog.events import PatternMatchingEventHandler
+
 
 DB_NAME = "mydatabase"
 DB_USER = "your_new_user"
